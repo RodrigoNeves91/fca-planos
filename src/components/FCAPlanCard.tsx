@@ -1,5 +1,5 @@
 import React from 'react';
-import { CreditCard as Edit2, Trash2, Calendar, User, CheckCircle, Clock, AlertCircle, RefreshCw } from 'lucide-react';
+import { Edit2, Trash2, RefreshCw } from 'lucide-react';
 import { FCAPlan } from '../types';
 
 interface FCAPlanCardProps {
@@ -13,81 +13,100 @@ interface FCAPlanCardProps {
 
 export function FCAPlanCard({ plan, onEdit, onEditRestricted, onDelete, isDeleting, isAdmin }: FCAPlanCardProps) {
   const statusConfig = {
-    pending: { label: 'Pendente', icon: AlertCircle, color: 'bg-yellow-100 text-yellow-800' },
-    in_progress: { label: 'Em Progresso', icon: Clock, color: 'bg-blue-100 text-blue-800' },
-    completed: { label: 'Concluído', icon: CheckCircle, color: 'bg-green-100 text-green-800' },
+    pending: { label: 'Pendente', color: 'bg-yellow-100 text-yellow-800 border-yellow-300' },
+    in_progress: { label: 'Em Progresso', color: 'bg-blue-100 text-blue-800 border-blue-300' },
+    completed: { label: 'Concluído', color: 'bg-green-100 text-green-800 border-green-300' },
   };
 
   const config = statusConfig[plan.status as keyof typeof statusConfig] || statusConfig.pending;
-  const StatusIcon = config.icon;
+  const fmt = (d: string) => d ? new Date(d).toLocaleDateString('pt-BR') : '-';
 
   return (
-    <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden w-full">
-      {/* Layout horizontal */}
-      <div className="flex items-stretch">
-        {/* Barra colorida lateral */}
-        <div className="w-2 bg-blue-600 flex-shrink-0" />
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow overflow-hidden">
+      {/* Header colorido */}
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-2 flex items-center justify-between">
+        <div className="flex items-center gap-2 text-white text-xs">
+          <span className="font-semibold">{plan.management_industry}</span>
+          <span className="opacity-60">•</span>
+          <span>{plan.shift}</span>
+          <span className="opacity-60">•</span>
+          <span>{plan.agd_date ? fmt(plan.agd_date) : '-'}</span>
+        </div>
+        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${config.color}`}>
+          {config.label}
+        </span>
+      </div>
 
-        {/* Conteúdo principal */}
-        <div className="flex-1 p-4">
-          <div className="flex items-start justify-between gap-4 flex-wrap">
-            {/* Info principal */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap mb-2">
-                <span className="text-xs font-semibold text-gray-500">{plan.management_industry}</span>
-                <span className="text-xs text-gray-400">•</span>
-                <span className="text-xs text-gray-500">{plan.sector}</span>
-                <span className="text-xs text-gray-400">•</span>
-                <span className="text-xs text-gray-500">{plan.shift}</span>
-              </div>
-              <p className="font-semibold text-gray-900 text-sm mb-1 line-clamp-2">{plan.fact}</p>
-              <p className="text-xs text-gray-600 mb-1"><span className="font-medium">Causa:</span> {plan.root_cause}</p>
-              <p className="text-xs text-gray-600"><span className="font-medium">Ação:</span> {plan.action}</p>
+      {/* Corpo em grid */}
+      <div className="p-4">
+        {/* Linha 1 — Fato, Causa, Ação */}
+        <div className="grid grid-cols-3 gap-3 mb-3">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-2">
+            <p className="text-xs font-bold text-red-600 mb-1">🔴 FATO</p>
+            <p className="text-xs text-gray-800 line-clamp-3">{plan.fact}</p>
+          </div>
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2">
+            <p className="text-xs font-bold text-yellow-600 mb-1">🟡 CAUSA RAIZ</p>
+            <p className="text-xs text-gray-800 line-clamp-3">{plan.root_cause}</p>
+          </div>
+          <div className="bg-green-50 border border-green-200 rounded-lg p-2">
+            <p className="text-xs font-bold text-green-600 mb-1">🟢 AÇÃO</p>
+            <p className="text-xs text-gray-800 line-clamp-3">{plan.action}</p>
+          </div>
+        </div>
+
+        {/* Linha 2 — Detalhes */}
+        <div className="grid grid-cols-4 gap-2 text-xs mb-3">
+          <div className="bg-gray-50 rounded-lg p-2">
+            <p className="text-gray-500 font-medium mb-0.5">Setor</p>
+            <p className="text-gray-800 font-semibold">{plan.sector}</p>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-2">
+            <p className="text-gray-500 font-medium mb-0.5">Área</p>
+            <p className="text-gray-800 font-semibold">{plan.area}</p>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-2">
+            <p className="text-gray-500 font-medium mb-0.5">Indicadores</p>
+            <p className="text-gray-800 font-semibold">{plan.indicators}</p>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-2">
+            <p className="text-gray-500 font-medium mb-0.5">Responsável</p>
+            <p className="text-gray-800 font-semibold">{plan.responsible}</p>
+          </div>
+        </div>
+
+        {/* Linha 3 — Prazos + Botões */}
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex gap-2 text-xs">
+            <div className="bg-orange-50 border border-orange-200 rounded-lg px-3 py-1.5">
+              <p className="text-orange-600 font-medium">📅 Prazo Previsto</p>
+              <p className="text-gray-800 font-semibold">{fmt(plan.planned_deadline)}</p>
             </div>
-
-            {/* Status + datas + responsável */}
-            <div className="flex flex-col items-end gap-2 flex-shrink-0">
-              <div className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${config.color}`}>
-                <StatusIcon className="w-3 h-3" />
-                {config.label}
-              </div>
-              <div className="text-xs text-gray-500 flex items-center gap-1">
-                <User className="w-3 h-3" />
-                {plan.responsible}
-              </div>
-              <div className="text-xs text-gray-500 flex items-center gap-1">
-                <Calendar className="w-3 h-3" />
-                {plan.planned_deadline ? new Date(plan.planned_deadline).toLocaleDateString('pt-BR') : '-'}
-              </div>
-              {plan.actual_deadline && (
-                <div className="text-xs text-green-600 flex items-center gap-1">
-                  <Calendar className="w-3 h-3" />
-                  ✅ {new Date(plan.actual_deadline).toLocaleDateString('pt-BR')}
-                </div>
-              )}
+            <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-1.5">
+              <p className="text-green-600 font-medium">✅ Prazo Realizado</p>
+              <p className="text-gray-800 font-semibold">{plan.actual_deadline ? fmt(plan.actual_deadline) : 'Pendente'}</p>
             </div>
           </div>
 
-          {/* Botões */}
-          <div className="flex gap-2 mt-3 pt-3 border-t">
+          <div className="flex gap-2">
             {isAdmin ? (
               <button onClick={() => onEdit(plan)}
-                className="flex items-center gap-1 bg-blue-100 hover:bg-blue-200 text-blue-700 font-medium py-1.5 px-3 rounded-lg transition-colors text-xs">
+                className="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-1.5 px-3 rounded-lg transition-colors text-xs">
                 <Edit2 className="w-3 h-3" />
-                Editar Tudo
+                Editar
               </button>
             ) : (
               <button onClick={() => onEditRestricted(plan)}
-                className="flex items-center gap-1 bg-blue-100 hover:bg-blue-200 text-blue-700 font-medium py-1.5 px-3 rounded-lg transition-colors text-xs">
+                className="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-1.5 px-3 rounded-lg transition-colors text-xs">
                 <RefreshCw className="w-3 h-3" />
                 Atualizar Status
               </button>
             )}
             {isAdmin && (
               <button onClick={() => onDelete(plan.id)} disabled={isDeleting}
-                className="flex items-center gap-1 bg-red-100 hover:bg-red-200 disabled:bg-gray-200 text-red-700 disabled:text-gray-500 font-medium py-1.5 px-3 rounded-lg transition-colors text-xs">
+                className="flex items-center gap-1 bg-red-100 hover:bg-red-200 text-red-700 font-medium py-1.5 px-3 rounded-lg transition-colors text-xs">
                 <Trash2 className="w-3 h-3" />
-                {isDeleting ? 'Deletando...' : 'Deletar'}
+                {isDeleting ? '...' : 'Deletar'}
               </button>
             )}
           </div>

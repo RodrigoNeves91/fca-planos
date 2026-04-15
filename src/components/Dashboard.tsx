@@ -168,3 +168,50 @@ export function Dashboard() {
               Novo Plano
             </button>
             {user?.is_admin && (
+              <button onClick={exportToCSV}
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                <Download className="w-4 h-4" />
+                Exportar CSV
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <div className="text-gray-600">Carregando planos...</div>
+          </div>
+        ) : filteredPlans.length === 0 ? (
+          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+            <p className="text-gray-600 text-lg">Nenhum plano encontrado</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredPlans.map(plan => (
+              <FCAPlanCard
+                key={plan.id}
+                plan={plan}
+                onEdit={handleEdit}
+                onEditRestricted={handleEditRestricted}
+                onDelete={handleDelete}
+                isDeleting={deletingId === plan.id}
+                isAdmin={user?.is_admin || false}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {showForm && (
+        <FCAPlanForm
+          plan={editingPlan}
+          onClose={() => { setShowForm(false); setEditingPlan(undefined); }}
+          onSuccess={loadPlans}
+          restrictedMode={restrictedMode}
+        />
+      )}
+    </div>
+  );
+}

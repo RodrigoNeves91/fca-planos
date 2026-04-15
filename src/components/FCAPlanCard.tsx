@@ -22,96 +22,76 @@ export function FCAPlanCard({ plan, onEdit, onEditRestricted, onDelete, isDeleti
   const StatusIcon = config.icon;
 
   return (
-    <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden h-full flex flex-col">
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
-        <div className="flex items-start justify-between mb-2">
-          <div className="flex-1">
-            <p className="text-white text-sm opacity-90">{plan.management_industry}</p>
-            <h3 className="text-white font-semibold text-lg line-clamp-2">{plan.fact?.substring(0, 50)}</h3>
-          </div>
-          <div className={`ml-2 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 ${config.color}`}>
-            <StatusIcon className="w-4 h-4" />
-            {config.label}
-          </div>
-        </div>
-      </div>
+    <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden w-full">
+      {/* Layout horizontal */}
+      <div className="flex items-stretch">
+        {/* Barra colorida lateral */}
+        <div className="w-2 bg-blue-600 flex-shrink-0" />
 
-      <div className="px-6 py-4 flex-1 space-y-3">
-        <div className="text-sm">
-          <p className="text-gray-600 font-medium mb-1">Setor</p>
-          <p className="text-gray-900">{plan.sector}</p>
-        </div>
-        <div className="text-sm">
-          <p className="text-gray-600 font-medium mb-1">Turno</p>
-          <p className="text-gray-900">{plan.shift}</p>
-        </div>
-        <div className="text-sm">
-          <p className="text-gray-600 font-medium mb-1">Responsável</p>
-          <div className="flex items-center gap-2 text-gray-900">
-            <User className="w-4 h-4" />
-            {plan.responsible}
-          </div>
-        </div>
-        <div className="text-sm">
-          <p className="text-gray-600 font-medium mb-1">Indicadores</p>
-          <p className="text-gray-900">{plan.indicators}</p>
-        </div>
-        <div className="grid grid-cols-2 gap-2 text-sm">
-          <div>
-            <p className="text-gray-600 font-medium mb-1">Prazo Previsto</p>
-            <div className="flex items-center gap-2 text-gray-900">
-              <Calendar className="w-4 h-4" />
-              {plan.planned_deadline ? new Date(plan.planned_deadline).toLocaleDateString('pt-BR') : '-'}
-            </div>
-          </div>
-          {plan.actual_deadline && (
-            <div>
-              <p className="text-gray-600 font-medium mb-1">Prazo Realizado</p>
-              <div className="flex items-center gap-2 text-gray-900">
-                <Calendar className="w-4 h-4" />
-                {new Date(plan.actual_deadline).toLocaleDateString('pt-BR')}
+        {/* Conteúdo principal */}
+        <div className="flex-1 p-4">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            {/* Info principal */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap mb-2">
+                <span className="text-xs font-semibold text-gray-500">{plan.management_industry}</span>
+                <span className="text-xs text-gray-400">•</span>
+                <span className="text-xs text-gray-500">{plan.sector}</span>
+                <span className="text-xs text-gray-400">•</span>
+                <span className="text-xs text-gray-500">{plan.shift}</span>
               </div>
+              <p className="font-semibold text-gray-900 text-sm mb-1 line-clamp-2">{plan.fact}</p>
+              <p className="text-xs text-gray-600 mb-1"><span className="font-medium">Causa:</span> {plan.root_cause}</p>
+              <p className="text-xs text-gray-600"><span className="font-medium">Ação:</span> {plan.action}</p>
             </div>
-          )}
-        </div>
-        <div className="text-sm">
-          <p className="text-gray-600 font-medium mb-1">Causa Raiz</p>
-          <p className="text-gray-900 line-clamp-2">{plan.root_cause}</p>
-        </div>
-        <div className="text-sm">
-          <p className="text-gray-600 font-medium mb-1">Ação</p>
-          <p className="text-gray-900 line-clamp-2">{plan.action}</p>
-        </div>
-      </div>
 
-      <div className="border-t px-6 py-3 flex gap-2 bg-gray-50">
-        {isAdmin ? (
-          <button
-            onClick={() => onEdit(plan)}
-            className="flex-1 flex items-center justify-center gap-2 bg-blue-100 hover:bg-blue-200 text-blue-700 font-medium py-2 px-3 rounded-lg transition-colors text-sm"
-          >
-            <Edit2 className="w-4 h-4" />
-            Editar Tudo
-          </button>
-        ) : (
-          <button
-            onClick={() => onEditRestricted(plan)}
-            className="flex-1 flex items-center justify-center gap-2 bg-blue-100 hover:bg-blue-200 text-blue-700 font-medium py-2 px-3 rounded-lg transition-colors text-sm"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Atualizar Status
-          </button>
-        )}
-        {isAdmin && (
-          <button
-            onClick={() => onDelete(plan.id)}
-            disabled={isDeleting}
-            className="flex-1 flex items-center justify-center gap-2 bg-red-100 hover:bg-red-200 disabled:bg-gray-200 text-red-700 disabled:text-gray-500 font-medium py-2 px-3 rounded-lg transition-colors text-sm"
-          >
-            <Trash2 className="w-4 h-4" />
-            {isDeleting ? 'Deletando...' : 'Deletar'}
-          </button>
-        )}
+            {/* Status + datas + responsável */}
+            <div className="flex flex-col items-end gap-2 flex-shrink-0">
+              <div className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${config.color}`}>
+                <StatusIcon className="w-3 h-3" />
+                {config.label}
+              </div>
+              <div className="text-xs text-gray-500 flex items-center gap-1">
+                <User className="w-3 h-3" />
+                {plan.responsible}
+              </div>
+              <div className="text-xs text-gray-500 flex items-center gap-1">
+                <Calendar className="w-3 h-3" />
+                {plan.planned_deadline ? new Date(plan.planned_deadline).toLocaleDateString('pt-BR') : '-'}
+              </div>
+              {plan.actual_deadline && (
+                <div className="text-xs text-green-600 flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  ✅ {new Date(plan.actual_deadline).toLocaleDateString('pt-BR')}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Botões */}
+          <div className="flex gap-2 mt-3 pt-3 border-t">
+            {isAdmin ? (
+              <button onClick={() => onEdit(plan)}
+                className="flex items-center gap-1 bg-blue-100 hover:bg-blue-200 text-blue-700 font-medium py-1.5 px-3 rounded-lg transition-colors text-xs">
+                <Edit2 className="w-3 h-3" />
+                Editar Tudo
+              </button>
+            ) : (
+              <button onClick={() => onEditRestricted(plan)}
+                className="flex items-center gap-1 bg-blue-100 hover:bg-blue-200 text-blue-700 font-medium py-1.5 px-3 rounded-lg transition-colors text-xs">
+                <RefreshCw className="w-3 h-3" />
+                Atualizar Status
+              </button>
+            )}
+            {isAdmin && (
+              <button onClick={() => onDelete(plan.id)} disabled={isDeleting}
+                className="flex items-center gap-1 bg-red-100 hover:bg-red-200 disabled:bg-gray-200 text-red-700 disabled:text-gray-500 font-medium py-1.5 px-3 rounded-lg transition-colors text-xs">
+                <Trash2 className="w-3 h-3" />
+                {isDeleting ? 'Deletando...' : 'Deletar'}
+              </button>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

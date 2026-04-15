@@ -8,9 +8,10 @@ interface FCAPlanFormProps {
   plan?: FCAPlan;
   onClose: () => void;
   onSuccess: () => void;
+  restrictedMode?: boolean;
 }
 
-export function FCAPlanForm({ plan, onClose, onSuccess }: FCAPlanFormProps) {
+export function FCAPlanForm({ plan, onClose, onSuccess, restrictedMode = false }: FCAPlanFormProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -32,31 +33,26 @@ export function FCAPlanForm({ plan, onClose, onSuccess }: FCAPlanFormProps) {
 
   const shifts = ['Turno 1', 'Turno 2', 'Turno 3', 'Madrugada'];
   const statuses = ['pending', 'in_progress', 'completed'];
-  const sectors = [
-    'Produção',
-    'Logística',
-    'Vendas',
-    'Administrativo',
-    'Qualidade',
-    'Manutenção',
-    'TI',
-    'RH',
-    'Financeiro',
-  ];
+  const sectors = ['Produção','Logística','Vendas','Administrativo','Qualidade','Manutenção','TI','RH','Financeiro'];
 
   function handleChange(field: string, value: string) {
     setFormData(prev => ({ ...prev, [field]: value }));
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSubmit() {
     if (!user) return;
-
     setLoading(true);
     setError('');
 
     try {
-      if (plan?.id) {
+      if (restrictedMode && plan?.id) {
+        // Modo restrito — só atualiza Status e Prazo Realizado
+        const { error: updateError } = await supabase
+          .from('fca_plans')
+          .update({ status: formData.status, actual_deadline: formData.actual_deadline })
+          .eq('id', plan.id);
+        if (updateError) throw updateError;
+      } else if (plan?.id) {
         const { error: updateError } = await supabase
           .from('fca_plans')
           .update(formData)
@@ -82,12 +78,9 @@ export function FCAPlanForm({ plan, onClose, onSuccess }: FCAPlanFormProps) {
       <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl m-4 my-8">
         <div className="flex justify-between items-center p-6 border-b">
           <h2 className="text-2xl font-bold text-gray-900">
-            {plan ? 'Editar Plano FCA' : 'Novo Plano FCA'}
+            {restrictedMode ? 'Atualizar Status / Prazo' : plan ? 'Editar Plano FCA' : 'Novo Plano FCA'}
           </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
-          >
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -98,199 +91,54 @@ export function FCAPlanForm({ plan, onClose, onSuccess }: FCAPlanFormProps) {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Turno</label>
-              <select
-                value={formData.shift}
-                onChange={(e) => handleChange('shift', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-                required
-              >
-                <option value="">Selecione</option>
-                {shifts.map((shift) => (
-                  <option key={shift} value={shift}>
-                    {shift}
-                  </option>
-                ))}
-              </select>
+        <div className="p-6 space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto">
+          {restrictedMode ? (
+            // Modo restrito — só Status e Prazo Realizado
+            <div className="space-y-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-blue-700 text-sm">Você pode atualizar apenas o <strong>Status</strong> e o <strong>Prazo Realizado</strong> deste plano.</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <select
+                  value={formData.status}
+                  onChange={(e) => handleChange('status', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+                >
+                  {statuses.map((status) => (
+                    <option key={status} value={status}>
+                      {status === 'pending' ? 'Pendente' : status === 'in_progress' ? 'Em Progresso' : 'Concluído'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Prazo Realizado</label>
+                <input
+                  type="date"
+                  value={formData.actual_deadline}
+                  onChange={(e) => handleChange('actual_deadline', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+                />
+              </div>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Data AGD</label>
-              <input
-                type="date"
-                value={formData.agd_date}
-                onChange={(e) => handleChange('agd_date', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Indústria de Gestão
-              </label>
-              <input
-                type="text"
-                value={formData.management_industry}
-                onChange={(e) => handleChange('management_industry', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Indicadores</label>
-              <input
-                type="text"
-                value={formData.indicators}
-                onChange={(e) => handleChange('indicators', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Setor</label>
-              <select
-                value={formData.sector}
-                onChange={(e) => handleChange('sector', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-                required
-              >
-                <option value="">Selecione</option>
-                {sectors.map((sector) => (
-                  <option key={sector} value={sector}>
-                    {sector}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Área</label>
-              <input
-                type="text"
-                value={formData.area}
-                onChange={(e) => handleChange('area', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Responsável pela Ação
-              </label>
-              <input
-                type="text"
-                value={formData.responsible}
-                onChange={(e) => handleChange('responsible', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-              <select
-                value={formData.status}
-                onChange={(e) => handleChange('status', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-                required
-              >
-                {statuses.map((status) => (
-                  <option key={status} value={status}>
-                    {status === 'pending'
-                      ? 'Pendente'
-                      : status === 'in_progress'
-                      ? 'Em Progresso'
-                      : 'Concluído'}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Prazo Previsto
-              </label>
-              <input
-                type="date"
-                value={formData.planned_deadline}
-                onChange={(e) => handleChange('planned_deadline', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Prazo Realizado
-              </label>
-              <input
-                type="date"
-                value={formData.actual_deadline}
-                onChange={(e) => handleChange('actual_deadline', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Fato</label>
-            <textarea
-              value={formData.fact}
-              onChange={(e) => handleChange('fact', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 resize-none"
-              rows={3}
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Causa Raiz</label>
-            <textarea
-              value={formData.root_cause}
-              onChange={(e) => handleChange('root_cause', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 resize-none"
-              rows={3}
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Ação</label>
-            <textarea
-              value={formData.action}
-              onChange={(e) => handleChange('action', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 resize-none"
-              rows={3}
-              required
-            />
-          </div>
-
-          <div className="flex gap-3 pt-4 border-t">
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium py-2 rounded-lg transition-colors flex items-center justify-center gap-2"
-            >
-              <Save className="w-4 h-4" />
-              {loading ? 'Salvando...' : 'Salvar'}
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-900 font-medium py-2 rounded-lg transition-colors"
-            >
-              Cancelar
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
+          ) : (
+            // Modo completo
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Turno</label>
+                  <select value={formData.shift} onChange={(e) => handleChange('shift', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" required>
+                    <option value="">Selecione</option>
+                    {shifts.map((s) => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Data AGD</label>
+                  <input type="date" value={formData.agd_date} onChange={(e) => handleChange('agd_date', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Indústria de Gestão</label>
+                  <input ty

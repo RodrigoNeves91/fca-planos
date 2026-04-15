@@ -141,4 +141,83 @@ export function FCAPlanForm({ plan, onClose, onSuccess, restrictedMode = false }
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Indústria de Gestão</label>
-                  <input ty
+                  <input type="text" value={formData.management_industry} onChange={(e) => handleChange('management_industry', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Indicadores</label>
+                  <input type="text" value={formData.indicators} onChange={(e) => handleChange('indicators', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Setor</label>
+                  <select value={formData.sector} onChange={(e) => handleChange('sector', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" required>
+                    <option value="">Selecione</option>
+                    {sectors.map((s) => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Área</label>
+                  <input type="text" value={formData.area} onChange={(e) => handleChange('area', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Responsável pela Ação</label>
+                  <input type="text" value={formData.responsible} onChange={(e) => handleChange('responsible', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <select value={formData.status} onChange={(e) => handleChange('status', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600">
+                    {statuses.map((s) => (
+                      <option key={s} value={s}>{s === 'pending' ? 'Pendente' : s === 'in_progress' ? 'Em Progresso' : 'Concluído'}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Prazo Previsto</label>
+                  <input type="date" value={formData.planned_deadline} onChange={(e) => handleChange('planned_deadline', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Prazo Realizado</label>
+                  <input type="date" value={formData.actual_deadline} onChange={(e) => handleChange('actual_deadline', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Fato</label>
+                <textarea value={formData.fact} onChange={(e) => handleChange('fact', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 resize-none" rows={3} required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Causa Raiz</label>
+                <textarea value={formData.root_cause} onChange={(e) => handleChange('root_cause', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 resize-none" rows={3} required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Ação</label>
+                <textarea value={formData.action} onChange={(e) => handleChange('action', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 resize-none" rows={3} required />
+              </div>
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-4 border-t">
+            <button onClick={handleSubmit} disabled={loading}
+              className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
+              <Save className="w-4 h-4" />
+              {loading ? 'Salvando...' : 'Salvar'}
+            </button>
+            <button onClick={onClose}
+              className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-900 font-medium py-2 rounded-lg transition-colors">
+              Cancelar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

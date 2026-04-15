@@ -16,68 +16,70 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
 
   useEffect(() => {
-    checkAuth();
+    // Timeout de segurança — nunca fica preso no loading
+    const timeout = setTimeout(() => {
+      setAuthState(prev => {
+        if (prev.loading) {
+          return { user: null, loading: false, error: null };
+        }
+        return prev;
+      });
+    }, 5000);
+
+    checkAuth().finally(() => clearTimeout(timeout));
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .maybeSingle();
-
-        if (profile) {
-          setAuthState({
-            user: {
-              id: session.user.id,
-              email: session.user.email || '',
-              name: profile.name || '',
-              sector: profile.sector || profile.setor || '',
-              is_admin: profile.is_admin || profile.role === 'admin' || false,
-            },
-            loading: false,
-            error: null,
-          });
-        } else {
-          setAuthState({ user: null, loading: false, error: null });
-        }
+        await loadProfile(session.user.id, session.user.email || '');
       } else {
         setAuthState({ user: null, loading: false, error: null });
       }
     });
 
-    return () => { subscription?.unsubscribe(); };
+    return () => {
+      subscription?.unsubscribe();
+      clearTimeout(timeout);
+    };
   }, []);
+
+  async function loadProfile(userId: string, email: string) {
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+
+      setAuthState({
+        user: {
+          id: userId,
+          email,
+          name: profile?.name || email.split('@')[0],
+          sector: profile?.sector || profile?.setor || 'Geral',
+          is_admin: profile?.is_admin || profile?.role === 'admin' || email === 'admin@empresa.com',
+        },
+        loading: false,
+        error: null,
+      });
+    } catch {
+      setAuthState({
+        user: { id: userId, email, name: email.split('@')[0], sector: 'Geral', is_admin: false },
+        loading: false,
+        error: null,
+      });
+    }
+  }
 
   async function checkAuth() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .maybeSingle();
-
-        if (profile) {
-          setAuthState({
-            user: {
-              id: session.user.id,
-              email: session.user.email || '',
-              name: profile.name || '',
-              sector: profile.sector || profile.setor || '',
-              is_admin: profile.is_admin || profile.role === 'admin' || false,
-            },
-            loading: false,
-            error: null,
-          });
-        } else {
-          setAuthState({ user: null, loading: false, error: null });
-        }
+        await loadProfile(session.user.id, session.user.email || '');
       } else {
         setAuthState({ user: null, loading: false, error: null });
       }
-    } catch (error) {
-      setAuthState({ user: null, loading: false, error: 'Auth error' });
+    } catch {
+      setAuthState({ user: null, loading: false, error: null });
     }
   }
 
@@ -99,10 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (signupError) throw signupError;
       if (!user) throw new Error('Signup failed');
       const is_admin = email === 'admin@empresa.com';
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert([{ id: user.id, name, sector, setor: sector, is_admin, role: is_admin ? 'admin' : 'user' }]);
-      if (profileError) throw profileError;
+      await supabase.from('profiles').insert([{ id: user.id, name, sector, setor: sector, is_admin, role: is_admin ? 'admin' : 'user' }]);
     } catch (error) {
       setAuthState(prev => ({ ...prev, error: error instanceof Error ? error.message : 'Signup failed', loading: false }));
       throw error;
@@ -110,12 +109,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function logout() {
-    try {
-      await supabase.auth.signOut();
-      setAuthState({ user: null, loading: false, error: null });
-    } catch (error) {
-      setAuthState(prev => ({ ...prev, error: 'Logout failed', loading: false }));
-    }
+    await supabase.auth.signOut();
+    setAuthState({ user: null, loading: false, error: null });
   }
 
   return (

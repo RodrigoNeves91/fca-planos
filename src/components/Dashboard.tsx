@@ -23,21 +23,15 @@ export function Dashboard() {
     { value: 'completed', label: 'Concluído' },
   ];
 
-  useEffect(() => {
-    loadPlans();
-  }, [user, selectedStatus]);
+  useEffect(() => { loadPlans(); }, [user, selectedStatus]);
 
   async function loadPlans() {
     if (!user) return;
     setLoading(true);
     try {
       let query = supabase.from('fca_plans').select('*');
-      if (!user.is_admin) {
-        query = query.eq('user_id', user.id);
-      }
-      if (selectedStatus) {
-        query = query.eq('status', selectedStatus);
-      }
+      if (!user.is_admin) query = query.eq('user_id', user.id);
+      if (selectedStatus) query = query.eq('status', selectedStatus);
       const { data, error } = await query.order('created_at', { ascending: false });
       if (error) throw error;
       setPlans(data || []);
@@ -55,57 +49,27 @@ export function Dashboard() {
       const { error } = await supabase.from('fca_plans').delete().eq('id', id);
       if (error) throw error;
       loadPlans();
-    } catch (error) {
-      alert('Erro ao deletar plano');
-    } finally {
-      setDeletingId(null);
-    }
+    } catch { alert('Erro ao deletar plano'); }
+    finally { setDeletingId(null); }
   }
 
-  function handleEdit(plan: FCAPlan) {
-    setEditingPlan(plan);
-    setRestrictedMode(false);
-    setShowForm(true);
-  }
-
-  function handleEditRestricted(plan: FCAPlan) {
-    setEditingPlan(plan);
-    setRestrictedMode(true);
-    setShowForm(true);
-  }
-
-  function handleNewPlan() {
-    setEditingPlan(undefined);
-    setRestrictedMode(false);
-    setShowForm(true);
-  }
+  function handleEdit(plan: FCAPlan) { setEditingPlan(plan); setRestrictedMode(false); setShowForm(true); }
+  function handleEditRestricted(plan: FCAPlan) { setEditingPlan(plan); setRestrictedMode(true); setShowForm(true); }
+  function handleNewPlan() { setEditingPlan(undefined); setRestrictedMode(false); setShowForm(true); }
 
   function exportToCSV() {
-    if (plans.length === 0) {
-      alert('Nenhum plano para exportar');
-      return;
-    }
+    if (plans.length === 0) { alert('Nenhum plano para exportar'); return; }
     const headers = ['Turno','Data AGD','Indústria de Gestão','Indicadores','Setor','Fato','Causa Raiz','Ação','Responsável','Área','Prazo Previsto','Prazo Realizado','Status','Data de Criação'];
-    const rows = plans.map(plan => [
-      plan.shift, plan.agd_date, plan.management_industry, plan.indicators,
-      plan.sector, plan.fact, plan.root_cause, plan.action, plan.responsible,
-      plan.area, plan.planned_deadline, plan.actual_deadline || '',
-      plan.status === 'pending' ? 'Pendente' : plan.status === 'in_progress' ? 'Em Progresso' : 'Concluído',
-      new Date(plan.created_at).toLocaleDateString('pt-BR'),
-    ]);
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')),
-    ].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const rows = plans.map(p => [p.shift,p.agd_date,p.management_industry,p.indicators,p.sector,p.fact,p.root_cause,p.action,p.responsible,p.area,p.planned_deadline,p.actual_deadline||'',p.status==='pending'?'Pendente':p.status==='in_progress'?'Em Progresso':'Concluído',new Date(p.created_at).toLocaleDateString('pt-BR')]);
+    const csv = [headers.join(','),...rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(','))].join('\n');
+    const blob = new Blob([csv],{type:'text/csv;charset=utf-8;'});
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = `fca-planos-${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
   }
 
-  const filteredPlans = selectedStatus ? plans.filter(plan => plan.status === selectedStatus) : plans;
-
+  const filteredPlans = selectedStatus ? plans.filter(p => p.status === selectedStatus) : plans;
   const stats = {
     total: plans.length,
     pending: plans.filter(p => p.status === 'pending').length,
@@ -116,90 +80,99 @@ export function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+        <div className="max-w-full mx-auto px-4 py-4 flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Plano de Ação FCA</h1>
-            <p className="text-gray-600 mt-1">Bem-vindo, {user?.name} {user?.is_admin ? '(Admin)' : ''}</p>
+            <h1 className="text-2xl font-bold text-gray-900">Plano de Ação FCA</h1>
+            <p className="text-gray-600 text-sm">Bem-vindo, {user?.name} {user?.is_admin ? '(Admin)' : ''}</p>
           </div>
-          <button onClick={logout}
-            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
-            <LogOut className="w-4 h-4" />
-            Sair
+          <button onClick={logout} className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm">
+            <LogOut className="w-4 h-4" /> Sair
           </button>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-500">
-            <p className="text-gray-600 text-sm font-medium">Total de Planos</p>
-            <p className="text-3xl font-bold text-gray-900 mt-2">{stats.total}</p>
+      <div className="max-w-full mx-auto px-4 py-4">
+        <div className="grid grid-cols-4 gap-4 mb-4">
+          <div className="bg-white rounded-lg shadow-sm p-4 border-l-4 border-blue-500">
+            <p className="text-gray-600 text-xs font-medium">Total</p>
+            <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
           </div>
-          <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-yellow-500">
-            <p className="text-gray-600 text-sm font-medium">Pendentes</p>
-            <p className="text-3xl font-bold text-gray-900 mt-2">{stats.pending}</p>
+          <div className="bg-white rounded-lg shadow-sm p-4 border-l-4 border-yellow-500">
+            <p className="text-gray-600 text-xs font-medium">Pendentes</p>
+            <p className="text-2xl font-bold text-gray-900">{stats.pending}</p>
           </div>
-          <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-orange-500">
-            <p className="text-gray-600 text-sm font-medium">Em Progresso</p>
-            <p className="text-3xl font-bold text-gray-900 mt-2">{stats.inProgress}</p>
+          <div className="bg-white rounded-lg shadow-sm p-4 border-l-4 border-orange-500">
+            <p className="text-gray-600 text-xs font-medium">Em Progresso</p>
+            <p className="text-2xl font-bold text-gray-900">{stats.inProgress}</p>
           </div>
-          <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-500">
-            <p className="text-gray-600 text-sm font-medium">Concluídos</p>
-            <p className="text-3xl font-bold text-gray-900 mt-2">{stats.completed}</p>
+          <div className="bg-white rounded-lg shadow-sm p-4 border-l-4 border-green-500">
+            <p className="text-gray-600 text-xs font-medium">Concluídos</p>
+            <p className="text-2xl font-bold text-gray-900">{stats.completed}</p>
           </div>
         </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+        <div className="flex gap-4 justify-between items-center mb-4">
           <div className="flex items-center gap-2">
-            <Filter className="w-5 h-5 text-gray-600" />
+            <Filter className="w-4 h-4 text-gray-600" />
             <select value={selectedStatus} onChange={(e) => setSelectedStatus(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600">
-              {statusOptions.map(option => (
-                <option key={option.value} value={option.value}>{option.label}</option>
-              ))}
+              className="px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm">
+              {statusOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           </div>
-          <div className="flex gap-3 w-full sm:w-auto">
-            <button onClick={handleNewPlan}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
-              <Plus className="w-4 h-4" />
-              Novo Plano
+          <div className="flex gap-2">
+            <button onClick={handleNewPlan} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-1.5 px-4 rounded-lg transition-colors text-sm">
+              <Plus className="w-4 h-4" /> Novo Plano
             </button>
             {user?.is_admin && (
-              <button onClick={exportToCSV}
-                className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
-                <Download className="w-4 h-4" />
-                Exportar CSV
+              <button onClick={exportToCSV} className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium py-1.5 px-4 rounded-lg transition-colors text-sm">
+                <Download className="w-4 h-4" /> Exportar CSV
               </button>
             )}
           </div>
         </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {loading ? (
-          <div className="flex justify-center py-12">
-            <div className="text-gray-600">Carregando planos...</div>
-          </div>
+          <div className="flex justify-center py-12 text-gray-600">Carregando planos...</div>
         ) : filteredPlans.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-            <p className="text-gray-600 text-lg">Nenhum plano encontrado</p>
+            <p className="text-gray-600">Nenhum plano encontrado</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredPlans.map(plan => (
-              <FCAPlanCard
-                key={plan.id}
-                plan={plan}
-                onEdit={handleEdit}
-                onEditRestricted={handleEditRestricted}
-                onDelete={handleDelete}
-                isDeleting={deletingId === plan.id}
-                isAdmin={user?.is_admin || false}
-              />
-            ))}
+          <div className="overflow-x-auto rounded-xl shadow-sm">
+            <table className="w-full text-xs border-collapse bg-white">
+              <thead>
+                <tr className="bg-blue-600 text-white">
+                  <th className="px-3 py-3 text-left font-semibold">Turno</th>
+                  <th className="px-3 py-3 text-left font-semibold">Data AGD</th>
+                  <th className="px-3 py-3 text-left font-semibold">Indústria</th>
+                  <th className="px-3 py-3 text-left font-semibold">Indicadores</th>
+                  <th className="px-3 py-3 text-left font-semibold">Setor</th>
+                  <th className="px-3 py-3 text-left font-semibold">Fato</th>
+                  <th className="px-3 py-3 text-left font-semibold">Causa Raiz</th>
+                  <th className="px-3 py-3 text-left font-semibold">Ação</th>
+                  <th className="px-3 py-3 text-left font-semibold">Responsável</th>
+                  <th className="px-3 py-3 text-left font-semibold">Área</th>
+                  <th className="px-3 py-3 text-left font-semibold">Prazo Previsto</th>
+                  <th className="px-3 py-3 text-left font-semibold">Prazo Realizado</th>
+                  <th className="px-3 py-3 text-left font-semibold">Status</th>
+                  <th className="px-3 py-3 text-left font-semibold">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredPlans.map((plan, i) => (
+                  <FCAPlanCard
+                    key={plan.id}
+                    plan={plan}
+                    onEdit={handleEdit}
+                    onEditRestricted={handleEditRestricted}
+                    onDelete={handleDelete}
+                    isDeleting={deletingId === plan.id}
+                    isAdmin={user?.is_admin || false}
+                    index={i}
+                  />
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
